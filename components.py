@@ -171,11 +171,11 @@ class CircuitComponent(QGraphicsItem):
     def draw_switch(self, painter: QPainter, rect: QRectF):
         center = rect.center()
         painter.drawEllipse(QPointF(center.x() - 15, center.y()), 3, 3)
-        #painter.drawEllipse(QPointF(center.x() + 15, center.y()), 3, 3)
         if self.switch_closed:
             painter.drawLine(center.x() - 15, center.y(),
                              center.x() + 18, center.y())
         else:
+            painter.drawEllipse(QPointF(center.x() + 15, center.y()), 3, 3)
             painter.drawLine(center.x() - 15, center.y(),
                              center.x() + 14, center.y() - 10)
 
