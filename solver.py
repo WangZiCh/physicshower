@@ -192,7 +192,7 @@ class CircuitSolver:
                 component_currents[id(vs)] = I_vs
 
                 # 短路检测：设置元件的短路标记
-                if abs(I_vs) >= 5.9:
+                if abs(I_vs) >= vs.params.get('emf', 3.0) / vs.params.get('internal_r', 0.5)-1e-7:
                     vs.sim_warning = True  # 电池变橙色
 
         return SimulationResult(node_voltages, component_currents, component_voltages, warnings)

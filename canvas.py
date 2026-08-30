@@ -1,7 +1,7 @@
 """
 电路画布 - 用于绘制和交互电路元件
 """
-from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QGraphicsLineItem, QGraphicsPathItem, QMenu
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsItem, QGraphicsLineItem, QGraphicsPathItem, QMenu, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox, QMessageBox
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal
 from PySide6.QtGui import QPen, QBrush, QColor, QPainter, QPainterPath, QAction
 from components import CircuitComponent
@@ -9,6 +9,197 @@ from components import CircuitComponent
 
 # 端口检测的阈值距离（像素）
 PORT_SNAP_DISTANCE = 15
+
+
+class BatteryPropertyDialog(QDialog):
+    """电池属性编辑对话框"""
+    
+    def __init__(self, component, parent=None):
+        super().__init__(parent)
+        self.component = component
+        self.setWindowTitle("电池属性")
+        self.setFixedSize(300, 180)
+        
+        layout = QVBoxLayout(self)
+        
+        # 电流显示（只读）
+        current_layout = QHBoxLayout()
+        current_label = QLabel("电流 (A):")
+        self.current_value = QLabel(f"{component.sim_current:.3f}")
+        current_layout.addWidget(current_label)
+        current_layout.addWidget(self.current_value)
+        current_layout.addStretch()
+        layout.addLayout(current_layout)
+        
+        # 电压输入
+        voltage_layout = QHBoxLayout()
+        voltage_label = QLabel("电压 (V):")
+        self.voltage_spin = QDoubleSpinBox()
+        self.voltage_spin.setRange(0.001, 999.0)
+        self.voltage_spin.setDecimals(3)
+        self.voltage_spin.setMinimum(0.001)
+        self.voltage_spin.setValue(component.params.get('emf', 3.0))
+        voltage_layout.addWidget(voltage_label)
+        voltage_layout.addWidget(self.voltage_spin)
+        layout.addLayout(voltage_layout)
+        
+        # 内阻输入
+        resistance_layout = QHBoxLayout()
+        resistance_label = QLabel("内阻 (Ω):")
+        self.resistance_spin = QDoubleSpinBox()
+        self.resistance_spin.setRange(0.001, 999.0)
+        self.resistance_spin.setDecimals(3)
+        self.resistance_spin.setMinimum(0.001)
+        self.resistance_spin.setValue(component.params.get('internal_r', 0.5))
+        resistance_layout.addWidget(resistance_label)
+        resistance_layout.addWidget(self.resistance_spin)
+        layout.addLayout(resistance_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("确定")
+        cancel_button = QPushButton("取消")
+        ok_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+    
+    def get_values(self):
+        """返回编辑后的电压和内阻"""
+        return self.voltage_spin.value(), self.resistance_spin.value()
+
+
+class BulbPropertyDialog(QDialog):
+    """灯泡属性编辑对话框"""
+    
+    def __init__(self, component, parent=None):
+        super().__init__(parent)
+        self.component = component
+        self.setWindowTitle("灯泡属性")
+        self.setFixedSize(300, 210)
+        
+        layout = QVBoxLayout(self)
+        
+        # 电流显示（只读）
+        current_layout = QHBoxLayout()
+        current_label = QLabel("电流 (A):")
+        current_value = QLabel(f"{component.sim_current:.3f}")
+        current_layout.addWidget(current_label)
+        current_layout.addWidget(current_value)
+        current_layout.addStretch()
+        layout.addLayout(current_layout)
+        
+        # 电压显示（只读）
+        voltage_layout = QHBoxLayout()
+        voltage_label = QLabel("电压 (V):")
+        voltage_value = QLabel(f"{component.sim_voltage:.3f}")
+        voltage_layout.addWidget(voltage_label)
+        voltage_layout.addWidget(voltage_value)
+        voltage_layout.addStretch()
+        layout.addLayout(voltage_layout)
+        
+        # 功率显示（只读）
+        power_layout = QHBoxLayout()
+        power_label = QLabel("功率 (W):")
+        power = component.sim_current ** 2 * component.params.get('resistance', 10.0)
+        power_value = QLabel(f"{power:.3f}")
+        power_layout.addWidget(power_label)
+        power_layout.addWidget(power_value)
+        power_layout.addStretch()
+        layout.addLayout(power_layout)
+        
+        # 电阻输入
+        resistance_layout = QHBoxLayout()
+        resistance_label = QLabel("电阻 (Ω):")
+        self.resistance_spin = QDoubleSpinBox()
+        self.resistance_spin.setRange(0.001, 999.0)
+        self.resistance_spin.setDecimals(3)
+        self.resistance_spin.setMinimum(0.001)
+        self.resistance_spin.setValue(component.params.get('resistance', 10.0))
+        resistance_layout.addWidget(resistance_label)
+        resistance_layout.addWidget(self.resistance_spin)
+        layout.addLayout(resistance_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("确定")
+        cancel_button = QPushButton("取消")
+        ok_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+    
+    def get_resistance(self):
+        """返回编辑后的电阻"""
+        return self.resistance_spin.value()
+
+
+class ResistorPropertyDialog(QDialog):
+    """电阻属性编辑对话框"""
+    
+    def __init__(self, component, parent=None):
+        super().__init__(parent)
+        self.component = component
+        self.setWindowTitle("电阻属性")
+        self.setFixedSize(300, 210)
+        
+        layout = QVBoxLayout(self)
+        
+        # 电流显示（只读）
+        current_layout = QHBoxLayout()
+        current_label = QLabel("电流 (A):")
+        current_value = QLabel(f"{component.sim_current:.3f}")
+        current_layout.addWidget(current_label)
+        current_layout.addWidget(current_value)
+        current_layout.addStretch()
+        layout.addLayout(current_layout)
+        
+        # 电压显示（只读）
+        voltage_layout = QHBoxLayout()
+        voltage_label = QLabel("电压 (V):")
+        voltage_value = QLabel(f"{component.sim_voltage:.3f}")
+        voltage_layout.addWidget(voltage_label)
+        voltage_layout.addWidget(voltage_value)
+        voltage_layout.addStretch()
+        layout.addLayout(voltage_layout)
+        
+        # 功率显示（只读）
+        power_layout = QHBoxLayout()
+        power_label = QLabel("功率 (W):")
+        power = component.sim_current ** 2 * component.params.get('resistance', 10.0)
+        power_value = QLabel(f"{power:.3f}")
+        power_layout.addWidget(power_label)
+        power_layout.addWidget(power_value)
+        power_layout.addStretch()
+        layout.addLayout(power_layout)
+        
+        # 电阻输入
+        resistance_layout = QHBoxLayout()
+        resistance_label = QLabel("电阻 (Ω):")
+        self.resistance_spin = QDoubleSpinBox()
+        self.resistance_spin.setRange(0.001, 999.0)
+        self.resistance_spin.setDecimals(3)
+        self.resistance_spin.setMinimum(0.001)
+        self.resistance_spin.setValue(component.params.get('resistance', 10.0))
+        resistance_layout.addWidget(resistance_label)
+        resistance_layout.addWidget(self.resistance_spin)
+        layout.addLayout(resistance_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("确定")
+        cancel_button = QPushButton("取消")
+        ok_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+    
+    def get_resistance(self):
+        """返回编辑后的电阻"""
+        return self.resistance_spin.value()
 
 
 class WireItem(QGraphicsPathItem):
@@ -301,11 +492,54 @@ class CircuitCanvas(QGraphicsView):
         """显示元件右键菜单"""
         menu = QMenu(self)
         
+        # 电池和电池组添加属性选项
+        if component.comp_type in ['battery', 'battery_pack']:
+            property_action = QAction("属性", self)
+            property_action.triggered.connect(lambda: self.show_battery_properties(component))
+            menu.addAction(property_action)
+        
+        # 灯泡添加属性选项
+        elif component.comp_type == 'bulb':
+            property_action = QAction("属性", self)
+            property_action.triggered.connect(lambda: self.show_bulb_properties(component))
+            menu.addAction(property_action)
+        
+        # 电阻添加属性选项
+        elif component.comp_type == 'resistor':
+            property_action = QAction("属性", self)
+            property_action.triggered.connect(lambda: self.show_resistor_properties(component))
+            menu.addAction(property_action)
+        
         delete_action = QAction("删除", self)
         delete_action.triggered.connect(lambda: self.delete_component(component))
         menu.addAction(delete_action)
         
         menu.exec(self.mapToGlobal(pos))
+    
+    def show_battery_properties(self, component):
+        """显示电池属性编辑对话框"""
+        dialog = BatteryPropertyDialog(component, self)
+        if dialog.exec():
+            emf, internal_r = dialog.get_values()
+            component.params['emf'] = emf
+            component.params['internal_r'] = internal_r
+            self.schedule_simulate()  # 重新仿真
+    
+    def show_bulb_properties(self, component):
+        """显示灯泡属性编辑对话框"""
+        dialog = BulbPropertyDialog(component, self)
+        if dialog.exec():
+            resistance = dialog.get_resistance()
+            component.params['resistance'] = resistance
+            self.schedule_simulate()  # 重新仿真
+    
+    def show_resistor_properties(self, component):
+        """显示电阻属性编辑对话框"""
+        dialog = ResistorPropertyDialog(component, self)
+        if dialog.exec():
+            resistance = dialog.get_resistance()
+            component.params['resistance'] = resistance
+            self.schedule_simulate()  # 重新仿真
     
     def delete_component(self, component):
         """删除元件及其相连的导线"""

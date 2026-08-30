@@ -174,10 +174,10 @@ class CircuitComponent(QGraphicsItem):
         painter.drawEllipse(QPointF(center.x() + 15, center.y()), 3, 3)
         if self.switch_closed:
             painter.drawLine(center.x() - 15, center.y(),
-                             center.x() + 18, center.y())
+                             center.x() + 15, center.y())
         else:
             painter.drawLine(center.x() - 15, center.y(),
-                             center.x() + 14, center.y() - 10)
+                             center.x() + 13, center.y() - 10)
 
     def draw_bulb(self, painter: QPainter, rect: QRectF):
         center = rect.center()
