@@ -136,6 +136,71 @@ class BulbPropertyDialog(QDialog):
         return self.resistance_spin.value()
 
 
+class SwitchPropertyDialog(QDialog):
+    """开关只读属性对话框"""
+    
+    def __init__(self, component, parent=None):
+        super().__init__(parent)
+        self.component = component
+        self.setWindowTitle("开关属性")
+        self.setFixedSize(300, 150)
+        
+        layout = QVBoxLayout(self)
+        
+        # 状态显示（只读）
+        state_layout = QHBoxLayout()
+        state_label = QLabel("状态:")
+        state_value = QLabel("闭合" if component.switch_closed else "断开")
+        state_layout.addWidget(state_label)
+        state_layout.addWidget(state_value)
+        state_layout.addStretch()
+        layout.addLayout(state_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("确定")
+        ok_button.clicked.connect(self.accept)
+        button_layout.addWidget(ok_button)
+        layout.addLayout(button_layout)
+
+
+class MeterPropertyDialog(QDialog):
+    """电表只读属性对话框（电流表/电压表）"""
+    
+    def __init__(self, component, parent=None):
+        super().__init__(parent)
+        self.component = component
+        self.setWindowTitle("电表属性")
+        self.setFixedSize(300, 150)
+        
+        layout = QVBoxLayout(self)
+        
+        # 电流显示（只读）
+        current_layout = QHBoxLayout()
+        current_label = QLabel("电流 (A):")
+        current_value = QLabel(f"{component.sim_current:.6f}")
+        current_layout.addWidget(current_label)
+        current_layout.addWidget(current_value)
+        current_layout.addStretch()
+        layout.addLayout(current_layout)
+        
+        # 电压显示（只读）
+        voltage_layout = QHBoxLayout()
+        voltage_label = QLabel("电压 (V):")
+        voltage_value = QLabel(f"{component.sim_voltage:.6f}")
+        voltage_layout.addWidget(voltage_label)
+        voltage_layout.addWidget(voltage_value)
+        voltage_layout.addStretch()
+        layout.addLayout(voltage_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("确定")
+        ok_button.clicked.connect(self.accept)
+        button_layout.addWidget(ok_button)
+        layout.addLayout(button_layout)
+
+
 class ResistorPropertyDialog(QDialog):
     """电阻属性编辑对话框"""
     
@@ -510,6 +575,18 @@ class CircuitCanvas(QGraphicsView):
             property_action.triggered.connect(lambda: self.show_resistor_properties(component))
             menu.addAction(property_action)
         
+        # 电流表和电压表添加属性选项（只读）
+        elif component.comp_type in ['ammeter', 'voltmeter']:
+            property_action = QAction("属性", self)
+            property_action.triggered.connect(lambda: self.show_meter_properties(component))
+            menu.addAction(property_action)
+        
+        # 开关添加属性选项（只读）
+        elif component.comp_type == 'switch':
+            property_action = QAction("属性", self)
+            property_action.triggered.connect(lambda: self.show_switch_properties(component))
+            menu.addAction(property_action)
+        
         delete_action = QAction("删除", self)
         delete_action.triggered.connect(lambda: self.delete_component(component))
         menu.addAction(delete_action)
@@ -540,6 +617,16 @@ class CircuitCanvas(QGraphicsView):
             resistance = dialog.get_resistance()
             component.params['resistance'] = resistance
             self.schedule_simulate()  # 重新仿真
+    
+    def show_meter_properties(self, component):
+        """显示电表属性对话框（只读）"""
+        dialog = MeterPropertyDialog(component, self)
+        dialog.exec()
+    
+    def show_switch_properties(self, component):
+        """显示开关属性对话框（只读）"""
+        dialog = SwitchPropertyDialog(component, self)
+        dialog.exec()
     
     def delete_component(self, component):
         """删除元件及其相连的导线"""
