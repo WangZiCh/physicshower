@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='初中物理电路绘制',
+    name='physicshower',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

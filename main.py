@@ -1,5 +1,5 @@
 """
-初中物理电路绘制程序 - 主程序入口
+physicshower程序 - 主程序入口
 """
 import sys
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QMessageBox, QLabel
@@ -13,7 +13,7 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("初中物理电路绘制与仿真")
+        self.setWindowTitle("Physicshower")
         self.setGeometry(100, 100, 1200, 800)
         
         # 创建中心部件
