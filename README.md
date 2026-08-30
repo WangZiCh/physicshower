@@ -1,4 +1,4 @@
-# physicshower与仿真 Physics Circuit Drawing and Simulation Tool For Middle School Physics Education
+# Physicshower
 
 一个面向初中物理教学的电路绘制与仿真工具。用户可以在画布上放置电路元件、用导线连接成电路，程序会自动求解并显示各元件的电流、电压示数。A physics circuit drawing and simulation tool for middle school physics education.
 
