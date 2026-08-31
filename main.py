@@ -2,10 +2,15 @@
 physicshower程序 - 主程序入口
 """
 import sys
+import os
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QMessageBox, QLabel
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from canvas import CircuitCanvas
 from panel import ComponentPanel
+
+# 图标路径（相对本文件，保证打包后也能找到）
+ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logo.ico")
 
 
 class MainWindow(QMainWindow):
@@ -122,6 +127,7 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')  # 使用 Fusion 样式
+    app.setWindowIcon(QIcon(ICON_PATH))  # 应用级图标：主窗口和所有属性对话框自动继承
     
     window = MainWindow()
     window.show()

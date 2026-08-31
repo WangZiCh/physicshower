@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1E3A8A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 圆角方形底板 -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#bg)"/>
+
+  <!-- 电路回路（横平竖直） -->
+  <rect x="56" y="56" width="144" height="144" rx="24"
+        fill="none" stroke="#93C5FD" stroke-width="10"/>
+
+  <!-- 四个接线节点 -->
+  <circle cx="128" cy="56"  r="12" fill="#E0F2FE"/>
+  <circle cx="200" cy="128" r="12" fill="#E0F2FE"/>
+  <circle cx="128" cy="200" r="12" fill="#E0F2FE"/>
+  <circle cx="56"  cy="128" r="12" fill="#E0F2FE"/>
+
+  <!-- 中心闪电 -->
+  <polygon points="140,80 106,134 126,134 116,178 152,122 131,122" fill="#FFFFFF"/>
+</svg>
