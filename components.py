@@ -21,6 +21,7 @@ DEFAULT_PARAMS = {
     "switch":    {},
     "bulb":      {"resistance": 10.0},
     "resistor":  {"resistance": 10.0},
+    "rheostat":  {"resistance": 10.0},
     "ammeter":   {"resistance": 1e-6},
     "voltmeter": {"resistance": 1e9}
 }
@@ -90,9 +91,15 @@ class CircuitComponent(QGraphicsItem):
 
     # ── 端口坐标（局部坐标系）──────────────────────────────
     def get_left_port(self) -> QPointF:
+        if self.comp_type == "rheostat":
+            # 滑动变阻器左端点：下方长方形左侧
+            return QPointF(-self.width/2, self.height/4)
         return QPointF(-self.width/2, 0)
 
     def get_right_port(self) -> QPointF:
+        if self.comp_type == "rheostat":
+            # 滑动变阻器右端点：上方箭头右侧
+            return QPointF(self.width/2, -self.height/4)
         return QPointF(self.width/2, 0)
 
     def get_left_port_scene_pos(self) -> QPointF:
@@ -116,6 +123,8 @@ class CircuitComponent(QGraphicsItem):
             self.draw_bulb(painter, rect)
         elif self.comp_type == "resistor":
             self.draw_resistor(painter, rect)
+        elif self.comp_type == "rheostat":
+            self.draw_rheostat(painter, rect)
         elif self.comp_type == "ammeter":
             self.draw_meter(painter, rect, "A")
         elif self.comp_type == "voltmeter":
@@ -224,6 +233,33 @@ class CircuitComponent(QGraphicsItem):
                          f"{R:.0f}Ω")
         painter.setPen(QPen(QColor(0, 0, 0), 2))
 
+    def draw_rheostat(self, painter: QPainter, rect: QRectF):
+        """绘制滑动变阻器：下方长方形 + 上方箭头"""
+        center = rect.center()
+        
+        # 下方长方形（电阻体）
+        rect_y = center.y() + self.height/4
+        painter.drawRect(QRectF(center.x() - 20, rect_y - 6, 40, 12))
+        
+        # 连接线
+        arrow_y = center.y() - self.height/4
+        painter.drawLine(center.x(), arrow_y, center.x() + 20, arrow_y)
+        # 箭头
+        painter.drawLine(center.x(), arrow_y, center.x(), rect_y - 6)
+        # 箭头头部
+        painter.drawLine(center.x(), rect_y - 6, center.x() + 3, rect_y - 12)
+        painter.drawLine(center.x(), rect_y - 6, center.x() - 3, rect_y - 12)
+        
+        
+        
+        # 阻值标注
+        R = self.params.get('resistance', 10.0)
+        painter.setPen(QPen(QColor(80, 80, 80), 1))
+        painter.drawText(rect.adjusted(0, -25, 0, 0),
+                         Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
+                         f"{R:.0f}Ω")
+        painter.setPen(QPen(QColor(0, 0, 0), 2))
+
     def draw_meter(self, painter: QPainter, rect: QRectF, label: str):
         center = rect.center()
         # 表盘背景
@@ -274,6 +310,7 @@ def create_component(comp_type: str, pos: QPointF) -> CircuitComponent:
         "switch":    36,
         "bulb":      24,
         "resistor":  40,
+        "rheostat":  40,
         "ammeter":   36,
         "voltmeter": 36
     }

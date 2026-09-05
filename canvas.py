@@ -267,6 +267,72 @@ class ResistorPropertyDialog(QDialog):
         return self.resistance_spin.value()
 
 
+class RheostatPropertyDialog(QDialog):
+    """滑动变阻器属性编辑对话框"""
+    
+    def __init__(self, component, parent=None):
+        super().__init__(parent)
+        self.component = component
+        self.setWindowTitle("滑动变阻器属性")
+        self.setFixedSize(300, 210)
+        
+        layout = QVBoxLayout(self)
+        
+        # 电流显示（只读）
+        current_layout = QHBoxLayout()
+        current_label = QLabel("电流 (A):")
+        current_value = QLabel(f"{component.sim_current:.3f}")
+        current_layout.addWidget(current_label)
+        current_layout.addWidget(current_value)
+        current_layout.addStretch()
+        layout.addLayout(current_layout)
+        
+        # 电压显示（只读）
+        voltage_layout = QHBoxLayout()
+        voltage_label = QLabel("电压 (V):")
+        voltage_value = QLabel(f"{component.sim_voltage:.3f}")
+        voltage_layout.addWidget(voltage_label)
+        voltage_layout.addWidget(voltage_value)
+        voltage_layout.addStretch()
+        layout.addLayout(voltage_layout)
+        
+        # 功率显示（只读）
+        power_layout = QHBoxLayout()
+        power_label = QLabel("功率 (W):")
+        power = component.sim_current ** 2 * component.params.get('resistance', 10.0)
+        power_value = QLabel(f"{power:.3f}")
+        power_layout.addWidget(power_label)
+        power_layout.addWidget(power_value)
+        power_layout.addStretch()
+        layout.addLayout(power_layout)
+        
+        # 电阻输入
+        resistance_layout = QHBoxLayout()
+        resistance_label = QLabel("电阻 (Ω):")
+        self.resistance_spin = QDoubleSpinBox()
+        self.resistance_spin.setRange(0.001, 999.0)
+        self.resistance_spin.setDecimals(3)
+        self.resistance_spin.setMinimum(0.001)
+        self.resistance_spin.setValue(component.params.get('resistance', 10.0))
+        resistance_layout.addWidget(resistance_label)
+        resistance_layout.addWidget(self.resistance_spin)
+        layout.addLayout(resistance_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("确定")
+        cancel_button = QPushButton("取消")
+        ok_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+    
+    def get_resistance(self):
+        """返回编辑后的电阻"""
+        return self.resistance_spin.value()
+
+
 class WireItem(QGraphicsPathItem):
     """导线，横平竖直的折线，跟随元件移动"""
     
@@ -491,7 +557,7 @@ class CircuitCanvas(QGraphicsView):
         return best
     
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.RightButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             port_info = self.find_nearest_port(scene_pos)
             
@@ -504,8 +570,11 @@ class CircuitCanvas(QGraphicsView):
                 )
                 self.preview_line.setPen(QPen(QColor(100, 100, 255), 1, Qt.PenStyle.DashLine))
                 self.scene.addItem(self.preview_line)
-            
-            event.accept()
+                event.accept()
+                return
+            super().mousePressEvent(event)
+        elif event.button() == Qt.MouseButton.RightButton:
+            super().mousePressEvent(event)
         else:
             super().mousePressEvent(event)
     
@@ -522,18 +591,10 @@ class CircuitCanvas(QGraphicsView):
             super().mouseMoveEvent(event)
     
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.RightButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             
-            # 检查是否点击在元件上
-            item = self.itemAt(event.pos())
-            if isinstance(item, CircuitComponent):
-                # 显示元件右键菜单
-                self.show_component_context_menu(item, event.pos())
-                event.accept()
-                return
-            
-            # 否则检查端口连线
+            # 检查端口连线
             if self.wire_start_info is not None:
                 port_info = self.find_nearest_port(scene_pos)
                 
@@ -548,8 +609,21 @@ class CircuitCanvas(QGraphicsView):
                         self.schedule_simulate()  # 自动仿真
                 
                 self.cancel_wire()
+                event.accept()
+                return
+            super().mouseReleaseEvent(event)
+        elif event.button() == Qt.MouseButton.RightButton:
+            scene_pos = self.mapToScene(event.pos())
             
-            event.accept()
+            # 检查是否点击在元件上
+            item = self.itemAt(event.pos())
+            if isinstance(item, CircuitComponent):
+                # 显示元件右键菜单
+                self.show_component_context_menu(item, event.pos())
+                event.accept()
+                return
+            
+            super().mouseReleaseEvent(event)
         else:
             super().mouseReleaseEvent(event)
     
@@ -573,6 +647,12 @@ class CircuitCanvas(QGraphicsView):
         elif component.comp_type == 'resistor':
             property_action = QAction("属性", self)
             property_action.triggered.connect(lambda: self.show_resistor_properties(component))
+            menu.addAction(property_action)
+        
+        # 滑动变阻器添加属性选项
+        elif component.comp_type == 'rheostat':
+            property_action = QAction("属性", self)
+            property_action.triggered.connect(lambda: self.show_rheostat_properties(component))
             menu.addAction(property_action)
         
         # 电流表和电压表添加属性选项（只读）
@@ -613,6 +693,14 @@ class CircuitCanvas(QGraphicsView):
     def show_resistor_properties(self, component):
         """显示电阻属性编辑对话框"""
         dialog = ResistorPropertyDialog(component, self)
+        if dialog.exec():
+            resistance = dialog.get_resistance()
+            component.params['resistance'] = resistance
+            self.schedule_simulate()  # 重新仿真
+    
+    def show_rheostat_properties(self, component):
+        """显示滑动变阻器属性编辑对话框"""
+        dialog = RheostatPropertyDialog(component, self)
         if dialog.exec():
             resistance = dialog.get_resistance()
             component.params['resistance'] = resistance

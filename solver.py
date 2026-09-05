@@ -80,7 +80,7 @@ class CircuitSolver:
             idx_p = node_id_map.get(node_p, 0)
             idx_n = node_id_map.get(node_n, 0)
 
-            if comp.comp_type in ['resistor', 'bulb']:
+            if comp.comp_type in ['resistor', 'bulb', 'rheostat']:
                 R = comp.params.get('resistance', 10.0)
                 if R < 1e-9:
                     warnings.append("电阻阻值过小，可能导致短路")
