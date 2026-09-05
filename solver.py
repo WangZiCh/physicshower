@@ -80,10 +80,19 @@ class CircuitSolver:
             idx_p = node_id_map.get(node_p, 0)
             idx_n = node_id_map.get(node_n, 0)
 
-            if comp.comp_type in ['resistor', 'bulb', 'rheostat']:
+            if comp.comp_type in ['resistor', 'bulb']:
                 R = comp.params.get('resistance', 10.0)
                 if R < 1e-9:
                     warnings.append("电阻阻值过小，可能导致短路")
+                    R = 1e-9
+                self._stamp_resistor(G, idx_p, idx_n, 1.0 / R)
+            
+            elif comp.comp_type == 'rheostat':
+                # 滑动变阻器阻值 = 总电阻 × 位置百分比
+                total_R = comp.params.get('resistance', 10.0)
+                position = comp.params.get('position', 50.0)
+                R = total_R * position / 100.0
+                if R < 1e-9:
                     R = 1e-9
                 self._stamp_resistor(G, idx_p, idx_n, 1.0 / R)
 

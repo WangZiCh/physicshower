@@ -21,7 +21,7 @@ DEFAULT_PARAMS = {
     "switch":    {},
     "bulb":      {"resistance": 10.0},
     "resistor":  {"resistance": 10.0},
-    "rheostat":  {"resistance": 10.0},
+    "rheostat":  {"resistance": 10.0, "position": 50.0},
     "ammeter":   {"resistance": 1e-6},
     "voltmeter": {"resistance": 1e9}
 }
@@ -236,22 +236,22 @@ class CircuitComponent(QGraphicsItem):
     def draw_rheostat(self, painter: QPainter, rect: QRectF):
         """绘制滑动变阻器：下方长方形 + 上方箭头"""
         center = rect.center()
+        position = self.params.get('position', 50.0)
         
         # 下方长方形（电阻体）
         rect_y = center.y() + self.height/4
         painter.drawRect(QRectF(center.x() - 20, rect_y - 6, 40, 12))
         
-        # 连接线
+        # 箭头水平位置随 position 变化（0%最左，100%最右）
+        arrow_x = center.x() - 17 + (position / 100.0) * 34
         arrow_y = center.y() - self.height/4
-        painter.drawLine(center.x(), arrow_y, center.x() + 20, arrow_y)
-        # 箭头
-        painter.drawLine(center.x(), arrow_y, center.x(), rect_y - 6)
+        
+        # 连接线（从箭头位置到电阻体）
+        painter.drawLine(arrow_x, arrow_y, arrow_x, rect_y - 6)
         # 箭头头部
-        painter.drawLine(center.x(), rect_y - 6, center.x() + 3, rect_y - 12)
-        painter.drawLine(center.x(), rect_y - 6, center.x() - 3, rect_y - 12)
-        
-        
-        
+        painter.drawLine(arrow_x, rect_y - 6, arrow_x + 3, rect_y - 12)
+        painter.drawLine(arrow_x, rect_y - 6, arrow_x - 3, rect_y - 12)
+        painter.drawLine(arrow_x, arrow_y, 20, arrow_y)
         # 阻值标注
         R = self.params.get('resistance', 10.0)
         painter.setPen(QPen(QColor(80, 80, 80), 1))

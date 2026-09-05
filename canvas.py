@@ -306,9 +306,9 @@ class RheostatPropertyDialog(QDialog):
         power_layout.addStretch()
         layout.addLayout(power_layout)
         
-        # 电阻输入
+        # 总电阻输入
         resistance_layout = QHBoxLayout()
-        resistance_label = QLabel("电阻 (Ω):")
+        resistance_label = QLabel("总电阻 (Ω):")
         self.resistance_spin = QDoubleSpinBox()
         self.resistance_spin.setRange(0.001, 999.0)
         self.resistance_spin.setDecimals(3)
@@ -317,6 +317,17 @@ class RheostatPropertyDialog(QDialog):
         resistance_layout.addWidget(resistance_label)
         resistance_layout.addWidget(self.resistance_spin)
         layout.addLayout(resistance_layout)
+        
+        # 滑动变阻器位置输入（百分比）
+        position_layout = QHBoxLayout()
+        position_label = QLabel("位置 (%):")
+        self.position_spin = QDoubleSpinBox()
+        self.position_spin.setRange(0.0, 100.0)
+        self.position_spin.setDecimals(1)
+        self.position_spin.setValue(component.params.get('position', 50.0))
+        position_layout.addWidget(position_label)
+        position_layout.addWidget(self.position_spin)
+        layout.addLayout(position_layout)
         
         # 按钮
         button_layout = QHBoxLayout()
@@ -328,9 +339,9 @@ class RheostatPropertyDialog(QDialog):
         button_layout.addWidget(cancel_button)
         layout.addLayout(button_layout)
     
-    def get_resistance(self):
-        """返回编辑后的电阻"""
-        return self.resistance_spin.value()
+    def get_values(self):
+        """返回编辑后的总电阻和位置"""
+        return self.resistance_spin.value(), self.position_spin.value()
 
 
 class WireItem(QGraphicsPathItem):
@@ -702,8 +713,9 @@ class CircuitCanvas(QGraphicsView):
         """显示滑动变阻器属性编辑对话框"""
         dialog = RheostatPropertyDialog(component, self)
         if dialog.exec():
-            resistance = dialog.get_resistance()
+            resistance, position = dialog.get_values()
             component.params['resistance'] = resistance
+            component.params['position'] = position
             self.schedule_simulate()  # 重新仿真
     
     def show_meter_properties(self, component):
