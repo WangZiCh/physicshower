@@ -17,6 +17,8 @@ env/
 .vscode/
 *.swp
 .trae/
+.trae/rules/
+git-commit-message.md
 
 # 系统文件
 Thumbs.db
