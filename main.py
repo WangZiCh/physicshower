@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.panel, stretch=1)
         
         # 操作提示
-        tip_label = QLabel("点击元件以添加至电路，按住右键以连接导线")
+        tip_label = QLabel("点击元件以添加至电路，按住左键以连接导线")
         tip_label.setStyleSheet("""
             QLabel {
                 background-color: #2b2b2b;
