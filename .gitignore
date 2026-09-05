@@ -16,6 +16,7 @@ env/
 .idea/
 .vscode/
 *.swp
+.trae/
 
 # 系统文件
 Thumbs.db
