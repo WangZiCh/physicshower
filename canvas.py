@@ -8,7 +8,7 @@ from components import CircuitComponent
 
 
 # 端口检测的阈值距离（像素）
-PORT_SNAP_DISTANCE = 15
+PORT_SNAP_DISTANCE = 10
 
 
 class BatteryPropertyDialog(QDialog):
