@@ -228,8 +228,8 @@ class CircuitComponent(QGraphicsItem):
         # 阻值标注
         R = self.params.get('resistance', 10.0)
         painter.setPen(QPen(QColor(80, 80, 80), 1))
-        painter.drawText(rect.adjusted(0, -25, 0, 0),
-                         Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
+        painter.drawText(rect.adjusted(0, 0, 0, 0),
+                         Qt.AlignmentFlag.AlignCenter,
                          f"{R:.0f}Ω")
         painter.setPen(QPen(QColor(0, 0, 0), 2))
 
@@ -240,7 +240,7 @@ class CircuitComponent(QGraphicsItem):
         
         # 下方长方形（电阻体）
         rect_y = center.y() + self.height/4
-        painter.drawRect(QRectF(center.x() - 20, rect_y - 6, 40, 12))
+        painter.drawRect(QRectF(center.x() - 20, rect_y - 6, 40, 16))
         
         # 箭头水平位置随 position 变化（0%最左，100%最右）
         arrow_x = center.x() - 17 + (position / 100.0) * 34
