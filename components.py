@@ -93,7 +93,7 @@ class CircuitComponent(QGraphicsItem):
     def get_left_port(self) -> QPointF:
         if self.comp_type == "rheostat":
             # 滑动变阻器左端点：下方长方形左侧
-            return QPointF(-self.width/2, self.height/4)
+            return QPointF(-self.width/2, 12)
         return QPointF(-self.width/2, 0)
 
     def get_right_port(self) -> QPointF:
