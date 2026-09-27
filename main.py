@@ -46,15 +46,31 @@ class MainWindow(QMainWindow):
         
         # 操作提示
         tip_label = QLabel("点击元件以添加至电路，按住左键以连接导线")
-        tip_label.setStyleSheet("""
-            QLabel {
-                background-color: #2b2b2b;
-                color: #888888;
-                font-size: 11px;
-                padding: 8px;
-                border-radius: 3px;
-            }
-        """)
+        # 根据主题设置样式
+        app = QApplication.instance()
+        palette = app.palette()
+        is_dark = palette.color(palette.ColorRole.Window).lightness() < 128
+        if is_dark:
+            tip_label.setStyleSheet("""
+                QLabel {
+                    background-color: #2b2b2b;
+                    color: #888888;
+                    font-size: 11px;
+                    padding: 8px;
+                    border-radius: 3px;
+                }
+            """)
+        else:
+            tip_label.setStyleSheet("""
+                QLabel {
+                    background-color: #ffffff;
+                    color: #666666;
+                    font-size: 11px;
+                    padding: 8px;
+                    border-radius: 3px;
+                    border: 1px solid #e0e0e0;
+                }
+            """)
         tip_label.setWordWrap(True)
         tip_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         right_layout.addWidget(tip_label)
