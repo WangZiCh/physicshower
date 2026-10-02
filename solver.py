@@ -108,6 +108,12 @@ class CircuitSolver:
                 R = comp.params.get('resistance', 1e9)
                 self._stamp_resistor(G, idx_p, idx_n, 1.0 / R)
 
+            elif comp.comp_type == 'diode':
+                # 理想二极管：正向导通电阻极小，反向截止电阻极大
+                # 初始假设正向导通，后续迭代会检查并更新
+                comp._diode_forward = True  # 标记当前状态
+                # 二极管导纳在迭代循环中填充
+
             elif comp.comp_type in ['battery', 'battery_pack']:
                 # 电池/电池组内阻：串联在 internal_node 和 node_n 之间
                 internal_node_id = internal_nodes[id(comp)]
@@ -147,22 +153,66 @@ class CircuitSolver:
             emf = vs.params.get('emf', 3.0)
             I_vec[vs_idx] = emf
 
-        # 10. 求解线性方程组
-        try:
-            solution = np.linalg.solve(G, I_vec)
-        except np.linalg.LinAlgError:
+        # 10. 求解线性方程组（带二极管迭代）
+        diodes = [c for c in components if c.comp_type == 'diode']
+        max_iterations = 10
+        
+        # 首次填充二极管导纳
+        for comp in diodes:
+            node_p = port_to_node.get(id(comp.left_port))
+            node_n = port_to_node.get(id(comp.right_port))
+            if node_p is None or node_n is None:
+                continue
+            idx_p = node_id_map.get(node_p, 0)
+            idx_n = node_id_map.get(node_n, 0)
+            R = 1e-6 if getattr(comp, '_diode_forward', True) else 1e9
+            self._stamp_resistor(G, idx_p, idx_n, 1.0 / R)
+        
+        for iteration in range(max_iterations):
             try:
-                solution, _, _, _ = np.linalg.lstsq(G, I_vec, rcond=None)
-                warnings.append("电路方程奇异，使用最小二乘法近似求解")
-            except Exception as e:
-                warnings.append(f"电路方程求解失败: {str(e)}")
-                return SimulationResult({}, {}, {}, warnings)
-
-        # 11. 提取节点电压
-        node_voltages = {ground_node: 0.0}
-        for node, idx in node_id_map.items():
-            if idx > 0 and idx - 1 < len(solution):
-                node_voltages[node] = solution[idx - 1]
+                solution = np.linalg.solve(G, I_vec)
+            except np.linalg.LinAlgError:
+                try:
+                    solution, _, _, _ = np.linalg.lstsq(G, I_vec, rcond=None)
+                    warnings.append("电路方程奇异，使用最小二乘法近似求解")
+                except Exception as e:
+                    warnings.append(f"电路方程求解失败: {str(e)}")
+                    return SimulationResult({}, {}, {}, warnings)
+            
+            # 提取节点电压
+            node_voltages = {ground_node: 0.0}
+            for node, idx in node_id_map.items():
+                if idx > 0 and idx - 1 < len(solution):
+                    node_voltages[node] = solution[idx - 1]
+            
+            # 检查二极管状态
+            state_changed = False
+            for comp in diodes:
+                node_p = port_to_node.get(id(comp.left_port))
+                node_n = port_to_node.get(id(comp.right_port))
+                if node_p is None or node_n is None:
+                    continue
+                V_p = node_voltages.get(node_p, 0.0)
+                V_n = node_voltages.get(node_n, 0.0)
+                V_diode = V_p - V_n
+                
+                # 判断二极管状态
+                should_be_forward = V_diode > 0
+                is_forward = getattr(comp, '_diode_forward', True)
+                
+                if should_be_forward != is_forward:
+                    # 更新二极管状态并重新填充导纳
+                    comp._diode_forward = should_be_forward
+                    idx_p = node_id_map.get(node_p, 0)
+                    idx_n = node_id_map.get(node_n, 0)
+                    # 移除旧导纳，添加新导纳（使用旧状态is_forward，不是新状态should_be_forward）
+                    old_R = 1e-6 if is_forward else 1e9
+                    new_R = 1e-6 if should_be_forward else 1e9
+                    self._stamp_resistor(G, idx_p, idx_n, 1.0 / new_R - 1.0 / old_R)
+                    state_changed = True
+            
+            if not state_changed:
+                break  # 状态稳定，退出迭代
 
         # 12. 计算各元件的电压和电流
         component_currents = {}
@@ -189,9 +239,26 @@ class CircuitSolver:
                 if R > 0:
                     I_comp = V_comp / R
                     component_currents[comp_id] = I_comp
-
                     if abs(I_comp) > 100:
                         warnings.append(f"电流过大 ({abs(I_comp):.2f}A)，可能存在短路")
+
+            elif comp.comp_type == 'rheostat':
+                total_R = comp.params.get('resistance', 10.0)
+                position = comp.params.get('position', 50.0)
+                R = total_R * position / 100.0
+                if R > 0:
+                    I_comp = V_comp / R
+                    component_currents[comp_id] = I_comp
+
+            elif comp.comp_type == 'diode':
+                # 二极管电流计算
+                if getattr(comp, '_diode_forward', True):
+                    R = 1e-6  # 正向电阻
+                else:
+                    R = 1e9   # 反向电阻
+                if R > 0:
+                    I_comp = V_comp / R
+                    component_currents[comp_id] = I_comp
 
         # 13. 提取电压源（电池）电流
         for i, vs in enumerate(voltage_sources):

@@ -8,7 +8,7 @@ from components import CircuitComponent
 
 
 # 端口检测的阈值距离（像素）
-PORT_SNAP_DISTANCE = 7
+PORT_SNAP_DISTANCE = 20
 
 
 class BatteryPropertyDialog(QDialog):
@@ -171,6 +171,43 @@ class MeterPropertyDialog(QDialog):
         super().__init__(parent)
         self.component = component
         self.setWindowTitle("电表属性")
+        self.setFixedSize(300, 150)
+        
+        layout = QVBoxLayout(self)
+        
+        # 电流显示（只读）
+        current_layout = QHBoxLayout()
+        current_label = QLabel("电流 (A):")
+        current_value = QLabel(f"{component.sim_current:.6f}")
+        current_layout.addWidget(current_label)
+        current_layout.addWidget(current_value)
+        current_layout.addStretch()
+        layout.addLayout(current_layout)
+        
+        # 电压显示（只读）
+        voltage_layout = QHBoxLayout()
+        voltage_label = QLabel("电压 (V):")
+        voltage_value = QLabel(f"{component.sim_voltage:.6f}")
+        voltage_layout.addWidget(voltage_label)
+        voltage_layout.addWidget(voltage_value)
+        voltage_layout.addStretch()
+        layout.addLayout(voltage_layout)
+        
+        # 按钮
+        button_layout = QHBoxLayout()
+        ok_button = QPushButton("确定")
+        ok_button.clicked.connect(self.accept)
+        button_layout.addWidget(ok_button)
+        layout.addLayout(button_layout)
+
+
+class DiodePropertyDialog(QDialog):
+    """二极管只读属性对话框"""
+    
+    def __init__(self, component, parent=None):
+        super().__init__(parent)
+        self.component = component
+        self.setWindowTitle("二极管属性")
         self.setFixedSize(300, 150)
         
         layout = QVBoxLayout(self)
@@ -570,6 +607,15 @@ class CircuitCanvas(QGraphicsView):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             scene_pos = self.mapToScene(event.pos())
+            
+            # 先检查是否点击了元件（元件优先）
+            item = self.scene.itemAt(scene_pos, self.transform())
+            if item is not None and hasattr(item, 'comp_type'):
+                # 点击了元件，让元件处理（拖动等）
+                super().mousePressEvent(event)
+                return
+            
+            # 没有点击元件，再检查是否靠近端口（创建导线）
             port_info = self.find_nearest_port(scene_pos)
             
             if port_info is not None:
@@ -678,6 +724,12 @@ class CircuitCanvas(QGraphicsView):
             property_action.triggered.connect(lambda: self.show_switch_properties(component))
             menu.addAction(property_action)
         
+        # 二极管添加属性选项（只读）
+        elif component.comp_type == 'diode':
+            property_action = QAction("属性", self)
+            property_action.triggered.connect(lambda: self.show_diode_properties(component))
+            menu.addAction(property_action)
+        
         delete_action = QAction("删除", self)
         delete_action.triggered.connect(lambda: self.delete_component(component))
         menu.addAction(delete_action)
@@ -726,6 +778,11 @@ class CircuitCanvas(QGraphicsView):
     def show_switch_properties(self, component):
         """显示开关属性对话框（只读）"""
         dialog = SwitchPropertyDialog(component, self)
+        dialog.exec()
+    
+    def show_diode_properties(self, component):
+        """显示二极管属性对话框（只读）"""
+        dialog = DiodePropertyDialog(component, self)
         dialog.exec()
     
     def delete_component(self, component):

@@ -49,6 +49,7 @@ class ComponentPanel(QWidget):
             ("bulb", "灯泡 💡"),
             ("resistor", "电阻 ⚡"),
             ("rheostat", "滑动变阻器 🎚"),
+            ("diode", "二极管 ▶|"),
             ("ammeter", "电流表 Ⓐ"),
             ("voltmeter", "电压表 Ⓥ")
         ]

@@ -3,7 +3,7 @@
 """
 from PySide6.QtWidgets import QGraphicsItem
 from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import QPen, QBrush, QColor, QPainter, QFont
+from PySide6.QtGui import QPen, QBrush, QColor, QPainter, QFont, QPainterPath
 import math
 
 
@@ -23,7 +23,8 @@ DEFAULT_PARAMS = {
     "resistor":  {"resistance": 10.0},
     "rheostat":  {"resistance": 10.0, "position": 50.0},
     "ammeter":   {"resistance": 1e-6},
-    "voltmeter": {"resistance": 1e9}
+    "voltmeter": {"resistance": 1e9},
+    "diode":     {}
 }
 
 
@@ -129,6 +130,8 @@ class CircuitComponent(QGraphicsItem):
             self.draw_meter(painter, rect, "A")
         elif self.comp_type == "voltmeter":
             self.draw_meter(painter, rect, "V")
+        elif self.comp_type == "diode":
+            self.draw_diode(painter, rect)
 
     # ── 各元件绘制 ──────────────────────────────────────────
     def draw_battery(self, painter: QPainter, rect: QRectF):
@@ -301,6 +304,20 @@ class CircuitComponent(QGraphicsItem):
         normal_font.setBold(False)
         painter.setFont(normal_font)
 
+    def draw_diode(self, painter: QPainter, rect: QRectF):
+        """绘制二极管：正极在左，负极在右"""
+        center = rect.center()
+        # 三角形（指向右）
+        triangle = QPainterPath()
+        triangle.moveTo(center.x() - 10, center.y() - 11.5)  # 左上
+        triangle.lineTo(center.x() - 10, center.y() + 11.5)  # 左下
+        triangle.lineTo(center.x() + 10, center.y())        # 右中
+        triangle.closeSubpath()
+        painter.drawPath(triangle)
+        # 竖线（负极）
+        painter.drawLine(center.x() + 10, center.y() - 11.5,
+                         center.x() + 10, center.y() + 11.5)
+
 
 def create_component(comp_type: str, pos: QPointF) -> CircuitComponent:
     """工厂函数：创建元件"""
@@ -312,7 +329,8 @@ def create_component(comp_type: str, pos: QPointF) -> CircuitComponent:
         "resistor":  40,
         "rheostat":  40,
         "ammeter":   36,
-        "voltmeter": 36
+        "voltmeter": 36,
+        "diode":     20
     }
     width = widths.get(comp_type, 60)
     return CircuitComponent(comp_type, pos, width=width)
